@@ -10,7 +10,7 @@ class BatchNorm2d(nn.BatchNorm2d):
     def __init__(self, num_features, activation="none"):
         super(BatchNorm2d, self).__init__(num_features=num_features)
         if activation == "leaky_relu":
-            self.activation = nn.ReLU()
+            self.activation = nn.LeakyReLU()
         elif activation == "none":
             self.activation = lambda x: x
         else:
@@ -53,7 +53,7 @@ class FANet(nn.Module):
     ):
         feat4, feat8, feat16, feat32 = self.resnet(x)
 
-        upfeat_32, smfeat_32 = self.ffm_32(feat32, None, True, True)
+        upfeat_32, _ = self.ffm_32(feat32, None, True, True)
         upfeat_16, smfeat_16 = self.ffm_16(feat16, upfeat_32, True, True)
         upfeat_8 = self.ffm_8(feat8, upfeat_16, True, False)
         smfeat_4 = self.ffm_4(feat4, upfeat_8, False, True)

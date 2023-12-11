@@ -26,6 +26,9 @@ def write_image(outArray, output_image_path):
 
 def main() -> None:
     gc.collect()
+    if DEVICE.type == "cuda":
+        torch.cuda.empty_cache()
+
     args: Namespace = get_solution_args()
 
     with pkg_resources.resource_stream(__name__, MODEL_FILE) as model_file:
@@ -36,6 +39,7 @@ def main() -> None:
             strict=False,
         )
         model.eval()
+
         if DEVICE == "cuda":
             start, end = torch.cuda.Event(
                 enable_timing=True
@@ -45,17 +49,34 @@ def main() -> None:
             args.input, args.output
         )
 
-        time = 0
         with torch.no_grad():
             gc.collect()
+            if DEVICE.type == "cuda":
+                torch.cuda.empty_cache()
+
+            # Warm up run
+            input_id = 0
+            for input, filenames in data_loader:
+                input = input.to(DEVICE)
+                input_id += 1
+                if input_id > 100 // 3:
+                    break
+                _ = model(input)
+
+            gc.collect()
+            if DEVICE.type == "cuda":
+                torch.cuda.empty_cache()
+
+            time = 0
+            # Actual run
             for input, filenames in data_loader:
                 input = input.to(DEVICE)
 
                 if DEVICE == "cuda":
+                    torch.cuda.synchronize()
                     start.record()
                     outTensor: torch.Tensor = model(input)
                     end.record()
-                    torch.cuda.synchronize()
                 else:
                     t0 = t.time()
                     outTensor: torch.tensor = model(input)
@@ -66,9 +87,9 @@ def main() -> None:
                 else:
                     time += t1 - t0
 
-                interp_mode = "bicubic"
+                interp_mode = "bilinear"
 
-                n, c, h, w = outTensor.shape
+                _, _, h, w = outTensor.shape
                 while h < 256:
                     h *= 2
                     w *= 2
@@ -79,9 +100,10 @@ def main() -> None:
                 outArray = F.interpolate(
                     outTensor, SIZE, mode=interp_mode, align_corners=True
                 ).data.max(1)[1]
+
                 outArray = outArray.cpu().numpy().astype(np.uint8)
 
-                executor = ThreadPoolExecutor(max_workers=4)
+                executor = ThreadPoolExecutor(max_workers=8)
                 for outData, filename in zip(outArray, filenames):
                     executor.submit(write_image, outData, filename)
                 executor.shutdown(wait=True)
