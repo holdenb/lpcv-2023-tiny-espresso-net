@@ -15,8 +15,8 @@ MODEL_FILE = "model.pkl"
 SIZE: List[int] = [512, 512]
 
 # TODO this needs to be specific to whatever model we end up using/modifying
-# INPUT_SIZE_X = 256
-# INPUT_SIZE = [INPUT_SIZE_X, INPUT_SIZE_X]
+INPUT_SIZE_X = 256
+INPUT_SIZE = [INPUT_SIZE_X, INPUT_SIZE_X]
 
 MEAN: Tuple[float, float, float] = (0.485, 0.456, 0.406)
 STANDARD_DEVIATION: Tuple[float, float, float] = (0.229, 0.224, 0.225)
@@ -37,10 +37,10 @@ class SegmentationDataset(Dataset):
             [
                 transforms.ToTensor(),
                 # TODO we may not need this size/interpolation mode
-                # transforms.Resize(
-                #     tuple(INPUT_SIZE),
-                #     interpolation=transforms.InterpolationMode.BILINEAR
-                # ),
+                transforms.Resize(
+                    tuple(INPUT_SIZE),
+                    interpolation=transforms.InterpolationMode.BILINEAR,
+                ),
                 transforms.Normalize(mean=MEAN, std=STANDARD_DEVIATION),
             ]
         )
@@ -97,10 +97,4 @@ def get_solution_args() -> Namespace:
         required=True,
         help="Filepath to the corresponding output segmentation map",
     )
-    return parser.parse_args()
-
-
-def get_training_args() -> Namespace:
-    parser: ArgumentParser = get_parser()
-    # TODO add args
     return parser.parse_args()
