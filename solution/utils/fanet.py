@@ -108,13 +108,17 @@ class ConvBNReLU(nn.Module):
 
 
 class FPNOutput(nn.Module):
-    def __init__(self, in_chan, mid_chan, n_classes, norm_layer=None, *args, **kwargs):
+    def __init__(
+        self, in_chan, mid_chan, n_classes, norm_layer=None, *args, **kwargs
+    ):
         super(FPNOutput, self).__init__()
         self.norm_layer = norm_layer
         self.conv = ConvBNReLU(
             in_chan, mid_chan, ks=3, stride=1, padding=1, norm_layer=norm_layer
         )
-        self.conv_out = nn.Conv2d(mid_chan, n_classes, kernel_size=1, bias=False)
+        self.conv_out = nn.Conv2d(
+            mid_chan, n_classes, kernel_size=1, bias=False
+        )
 
     def forward(self, x):
         x = self.conv(x)
@@ -124,7 +128,13 @@ class FPNOutput(nn.Module):
 
 class LAFeatureFusionModule(nn.Module):
     def __init__(
-        self, in_chan, mid_chn=256, out_chan=128, norm_layer=None, *args, **kwargs
+        self,
+        in_chan,
+        mid_chn=256,
+        out_chan=128,
+        norm_layer=None,
+        *args,
+        **kwargs
     ):
         super(LAFeatureFusionModule, self).__init__()
         self.norm_layer = norm_layer

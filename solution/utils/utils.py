@@ -23,23 +23,27 @@ STANDARD_DEVIATION: Tuple[float, float, float] = (0.229, 0.224, 0.225)
 
 
 class SegmentationDataset(Dataset):
-    __slots__ = ['root_dir', 'image_list', 'out_list', 'transform']
+    __slots__ = ["root_dir", "image_list", "out_list", "transform"]
 
     def __init__(self, root_dir, out_dir):
         self.root_dir = root_dir
-        self.image_list = \
-            [os.path.join(self.root_dir, i) for i in os.listdir(root_dir)]
-        self.out_list = \
-            [os.path.join(out_dir, i) for i in os.listdir(root_dir)]
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            # TODO we may not need this size/interpolation mode
-            # transforms.Resize(
-            #     tuple(INPUT_SIZE),
-            #     interpolation=transforms.InterpolationMode.BILINEAR
-            # ),
-            transforms.Normalize(mean=MEAN, std=STANDARD_DEVIATION)
-        ])
+        self.image_list = [
+            os.path.join(self.root_dir, i) for i in os.listdir(root_dir)
+        ]
+        self.out_list = [
+            os.path.join(out_dir, i) for i in os.listdir(root_dir)
+        ]
+        self.transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                # TODO we may not need this size/interpolation mode
+                # transforms.Resize(
+                #     tuple(INPUT_SIZE),
+                #     interpolation=transforms.InterpolationMode.BILINEAR
+                # ),
+                transforms.Normalize(mean=MEAN, std=STANDARD_DEVIATION),
+            ]
+        )
 
     def __len__(self):
         return len(self.image_list)
@@ -47,22 +51,19 @@ class SegmentationDataset(Dataset):
     def __getitem__(self, idx):
         return (
             self.transform(imread(uri=self.image_list[idx])),
-            self.out_list[idx]
+            self.out_list[idx],
         )
 
 
 def load_segmentation_dataset(image_root_dir, image_output_dir) -> DataLoader:
     return DataLoader(
-        SegmentationDataset(
-            root_dir=image_root_dir,
-            out_dir=image_output_dir
-        ),
+        SegmentationDataset(root_dir=image_root_dir, out_dir=image_output_dir),
         persistent_workers=True,
         batch_size=4,
         shuffle=False,
         num_workers=2,
         prefetch_factor=2,
-        pin_memory=True
+        pin_memory=True,
     )
 
 
@@ -72,9 +73,11 @@ def get_parser() -> ArgumentParser:
 
     prog: str = programName
     usage: str = f"This is the {programName}"
-    description: str = f"This {programName} does create a single" + \
-        " segmentation map of areal scenes of disaster environments" + \
-        " captured by unmanned areal vehicles (UAVs)"
+    description: str = (
+        f"This {programName} does create a single"
+        + " segmentation map of areal scenes of disaster environments"
+        + " captured by unmanned areal vehicles (UAVs)"
+    )
     epilog: str = f"This {programName} was created by {''.join(authors)}"
 
     return ArgumentParser(prog, usage, description, epilog)
