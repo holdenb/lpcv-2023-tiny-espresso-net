@@ -21,7 +21,7 @@ class BatchNorm2d(nn.BatchNorm2d):
 
 
 class FANet(nn.Module):
-    def __init__(self, nclass=14, backbone="resnet18", norm_layer=BatchNorm2d):
+    def __init__(self, nclass=14, norm_layer=BatchNorm2d):
         super(FANet, self).__init__()
 
         self.norm_layer = norm_layer
@@ -51,8 +51,6 @@ class FANet(nn.Module):
         self,
         x,
     ):
-        _, _, h, w = x.size()
-
         feat4, feat8, feat16, feat32 = self.resnet(x)
 
         upfeat_32, smfeat_32 = self.ffm_32(feat32, None, True, True)
@@ -83,8 +81,6 @@ class ConvBNReLU(nn.Module):
         padding=1,
         norm_layer=None,
         activation="leaky_relu",
-        *args,
-        **kwargs
     ):
         super(ConvBNReLU, self).__init__()
         self.conv = nn.Conv2d(
@@ -108,9 +104,7 @@ class ConvBNReLU(nn.Module):
 
 
 class FPNOutput(nn.Module):
-    def __init__(
-        self, in_chan, mid_chan, n_classes, norm_layer=None, *args, **kwargs
-    ):
+    def __init__(self, in_chan, mid_chan, n_classes, norm_layer=None):
         super(FPNOutput, self).__init__()
         self.norm_layer = norm_layer
         self.conv = ConvBNReLU(
@@ -127,15 +121,7 @@ class FPNOutput(nn.Module):
 
 
 class LAFeatureFusionModule(nn.Module):
-    def __init__(
-        self,
-        in_chan,
-        mid_chn=256,
-        out_chan=128,
-        norm_layer=None,
-        *args,
-        **kwargs
-    ):
+    def __init__(self, in_chan, mid_chn=256, out_chan=128, norm_layer=None):
         super(LAFeatureFusionModule, self).__init__()
         self.norm_layer = norm_layer
         self._up_kwargs = up_kwargs

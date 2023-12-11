@@ -180,7 +180,7 @@ class ResNet(nn.Module):
         self.load_state_dict(self_state_dict, strict=True)
 
 
-def Resnet18(pretrained=False, norm_layer=None, **kwargs):
+def Resnet18(pretrained=False, norm_layer=None):
     model = ResNet(
         BasicBlock, [2, 2, 2, 2], [2, 2, 2, 2], norm_layer=norm_layer
     )
