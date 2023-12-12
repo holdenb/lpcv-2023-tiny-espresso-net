@@ -40,10 +40,9 @@ def main() -> None:
         )
         model.eval()
 
-        if DEVICE == "cuda":
-            start, end = torch.cuda.Event(
-                enable_timing=True
-            ), torch.cuda.Event(enable_timing=True)
+        start, end = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
+            enable_timing=True
+        )
 
         data_loader: DataLoader = load_segmentation_dataset(
             args.input, args.output
@@ -72,20 +71,12 @@ def main() -> None:
             for input, filenames in data_loader:
                 input = input.to(DEVICE)
 
-                if DEVICE == "cuda":
-                    torch.cuda.synchronize()
-                    start.record()
-                    outTensor: torch.Tensor = model(input)
-                    end.record()
-                else:
-                    t0 = t.time()
-                    outTensor: torch.tensor = model(input)
-                    t1 = t.time()
+                start.record()
+                outTensor: torch.Tensor = model(input)
+                end.record()
 
-                if DEVICE == "cuda":
-                    time += start.elapsed_time(end)
-                else:
-                    time += t1 - t0
+                torch.cuda.synchronize()
+                time += start.elapsed_time(end)
 
                 interp_mode = "bilinear"
 
@@ -111,6 +102,5 @@ def main() -> None:
         print(time / 1000)
 
         gc.collect()
-        if DEVICE.type == "cuda":
-            torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
         model_file.close()
