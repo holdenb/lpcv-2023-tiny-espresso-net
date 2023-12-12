@@ -37,10 +37,10 @@ class SegmentationDataset(Dataset):
             [
                 transforms.ToTensor(),
                 # TODO we may not need this size/interpolation mode
-                # transforms.Resize(
-                #     tuple(INPUT_SIZE),
-                #     interpolation=transforms.InterpolationMode.BILINEAR,
-                # ),
+                transforms.Resize(
+                    tuple(INPUT_SIZE),
+                    interpolation=transforms.InterpolationMode.BILINEAR,
+                ),
                 transforms.Normalize(mean=MEAN, std=STANDARD_DEVIATION),
             ]
         )
@@ -59,7 +59,7 @@ def load_segmentation_dataset(image_root_dir, image_output_dir) -> DataLoader:
     return DataLoader(
         SegmentationDataset(root_dir=image_root_dir, out_dir=image_output_dir),
         persistent_workers=True,
-        batch_size=4,
+        batch_size=2,
         shuffle=True,
         num_workers=2,
         prefetch_factor=2,

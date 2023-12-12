@@ -7,7 +7,6 @@ from utils.fanet import FANet
 from imageio import imwrite
 import pkg_resources
 import gc
-import time as t
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -26,8 +25,7 @@ def write_image(outArray, output_image_path):
 
 def main() -> None:
     gc.collect()
-    if DEVICE.type == "cuda":
-        torch.cuda.empty_cache()
+    torch.cuda.empty_cache()
 
     args: Namespace = get_solution_args()
 
@@ -40,31 +38,29 @@ def main() -> None:
         )
         model.eval()
 
-        start, end = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
-            enable_timing=True
-        )
+        interp_mode = "bilinear"
 
         data_loader: DataLoader = load_segmentation_dataset(
             args.input, args.output
         )
 
+        executor = ThreadPoolExecutor(max_workers=4)
         with torch.no_grad():
             gc.collect()
-            if DEVICE.type == "cuda":
-                torch.cuda.empty_cache()
+            torch.cuda.empty_cache()
+
+            start, end = torch.cuda.Event(
+                enable_timing=True
+            ), torch.cuda.Event(enable_timing=True)
 
             # Warm up run
             input_id = 0
             for input, filenames in data_loader:
                 input = input.to(DEVICE)
                 input_id += 1
-                if input_id > 100 // 3:
+                if input_id > 100 // 4:
                     break
                 _ = model(input)
-
-            gc.collect()
-            if DEVICE.type == "cuda":
-                torch.cuda.empty_cache()
 
             time = 0
             # Actual run
@@ -77,8 +73,6 @@ def main() -> None:
 
                 torch.cuda.synchronize()
                 time += start.elapsed_time(end)
-
-                interp_mode = "bilinear"
 
                 _, _, h, w = outTensor.shape
                 while h < 256:
@@ -94,13 +88,11 @@ def main() -> None:
 
                 outArray = outArray.cpu().numpy().astype(np.uint8)
 
-                executor = ThreadPoolExecutor(max_workers=8)
                 for outData, filename in zip(outArray, filenames):
                     executor.submit(write_image, outData, filename)
-                executor.shutdown(wait=True)
+
+            executor.shutdown(wait=True)
 
         print(time / 1000)
-
-        gc.collect()
         torch.cuda.empty_cache()
         model_file.close()
