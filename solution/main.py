@@ -40,6 +40,8 @@ def main() -> None:
         )
         model.eval()
 
+        interp_mode = "bilinear"
+
         if DEVICE == "cuda":
             start, end = torch.cuda.Event(
                 enable_timing=True
@@ -49,11 +51,13 @@ def main() -> None:
             args.input, args.output
         )
 
-        with torch.no_grad():
-            gc.collect()
-            if DEVICE.type == "cuda":
-                torch.cuda.empty_cache()
+        gc.collect()
+        if DEVICE.type == "cuda":
+            torch.cuda.empty_cache()
 
+        executor = ThreadPoolExecutor(max_workers=8)
+
+        with torch.no_grad():
             # Warm up run
             input_id = 0
             for input, filenames in data_loader:
@@ -63,20 +67,16 @@ def main() -> None:
                     break
                 _ = model(input)
 
-            gc.collect()
-            if DEVICE.type == "cuda":
-                torch.cuda.empty_cache()
-
             time = 0
             # Actual run
             for input, filenames in data_loader:
                 input = input.to(DEVICE)
 
                 if DEVICE == "cuda":
-                    torch.cuda.synchronize()
                     start.record()
                     outTensor: torch.Tensor = model(input)
                     end.record()
+                    torch.cuda.synchronize()
                 else:
                     t0 = t.time()
                     outTensor: torch.tensor = model(input)
@@ -86,8 +86,6 @@ def main() -> None:
                     time += start.elapsed_time(end)
                 else:
                     time += t1 - t0
-
-                interp_mode = "bilinear"
 
                 _, _, h, w = outTensor.shape
                 while h < 256:
@@ -103,14 +101,12 @@ def main() -> None:
 
                 outArray = outArray.cpu().numpy().astype(np.uint8)
 
-                executor = ThreadPoolExecutor(max_workers=8)
                 for outData, filename in zip(outArray, filenames):
                     executor.submit(write_image, outData, filename)
-                executor.shutdown(wait=True)
+
+            executor.shutdown(wait=True)
 
         print(time / 1000)
-
-        gc.collect()
         if DEVICE.type == "cuda":
             torch.cuda.empty_cache()
         model_file.close()
