@@ -61,7 +61,7 @@ def load_segmentation_dataset(image_root_dir, image_output_dir) -> DataLoader:
         persistent_workers=True,
         batch_size=1,
         shuffle=True,
-        num_workers=1,
+        num_workers=4,
         prefetch_factor=2,
         pin_memory=True,
     )

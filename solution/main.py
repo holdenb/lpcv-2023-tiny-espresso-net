@@ -44,7 +44,7 @@ def main() -> None:
             args.input, args.output
         )
 
-        executor = ThreadPoolExecutor(max_workers=4)
+        executor = ThreadPoolExecutor(max_workers=8)
         with torch.no_grad():
             gc.collect()
             torch.cuda.empty_cache()
@@ -58,7 +58,7 @@ def main() -> None:
             for input, filenames in data_loader:
                 input = input.to(DEVICE)
                 input_id += 1
-                if input_id > 100 // 4:
+                if input_id > 100 // 3:
                     break
                 _ = model(input)
 
